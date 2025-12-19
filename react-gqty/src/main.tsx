@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { GraphQLProvider } from "./graphql/context";
-import { MultiTenantApp } from "./AppMultiTenant";
+import { MultiTenantApp } from "./UpdatedMultiTenantApp";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
