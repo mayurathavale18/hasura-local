@@ -162,7 +162,7 @@ export default function App() {
             >
               {id === "default"
                 ? "Default"
-                : id
+                : ((id ?? "") as string)
                     .replace(/-/g, " ")
                     .replace(/\b\w/g, (l) => l.toUpperCase())}
             </button>
