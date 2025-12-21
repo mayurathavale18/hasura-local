@@ -110,7 +110,7 @@ export default function App() {
         }}
       >
         <h3 style={{ margin: "0 0 10px 0", color: "#2e7d32" }}>
-          ✅ Using Build-Time Generated Client
+          Using Build-Time Generated Client
         </h3>
         <ul style={{ fontSize: "14px", lineHeight: "1.8", margin: 0 }}>
           <li>
@@ -128,7 +128,7 @@ export default function App() {
             <strong>Multi-tenant support</strong> with pre-generated schemas
           </li>
           <li>
-            <strong>Build fails if schema breaks</strong> → Production safety ✅
+            <strong>Build fails if schema breaks</strong> → Production safety
           </li>
         </ul>
       </div>
@@ -144,7 +144,7 @@ export default function App() {
       >
         <h3>Select Tenant</h3>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          {(["default", "tenant-1", "tenant-2"] as TenantId[]).map((id) => (
+          {(["default"] as TenantId[]).map((id) => (
             <button
               key={id}
               onClick={() => setTenantId(id)}
@@ -185,7 +185,7 @@ export default function App() {
             color: "#c62828",
           }}
         >
-          <strong>❌ Error:</strong> {error}
+          <strong>Error:</strong> {error}
         </div>
       )}
 
@@ -275,7 +275,7 @@ export default function App() {
               fontWeight: "bold",
             }}
           >
-            {loading ? "🔄 Refreshing..." : "🔄 Refresh"}
+            {loading ? "Refreshing..." : "Refresh"}
           </button>
         </div>
 
@@ -386,7 +386,7 @@ export default function App() {
                           fontWeight: "bold",
                         }}
                       >
-                        🗑️ Delete
+                        Delete
                       </button>
                     </td>
                   </tr>
@@ -406,7 +406,7 @@ export default function App() {
           borderRadius: "5px",
         }}
       >
-        <h3 style={{ color: "#aed581", marginTop: 0 }}>💻 Code Example</h3>
+        <h3 style={{ color: "#aed581", marginTop: 0 }}>Code Example</h3>
         <pre
           style={{
             color: "#aed581",
@@ -424,22 +424,22 @@ const client = createClient({
   tenantId: '${tenantId}',
 });
 
-// ✅ Type-safe query
+// Type-safe query
 const profiles = await client.queryProfiles({
   limit: 10
 });
 
-// ✅ Type-safe mutation
+// Type-safe mutation
 await client.insertProfiles({
   name: 'John Doe'
 });
 
-// ✅ Type-safe delete
+// Type-safe delete
 await client.deleteProfiles({
   id: { _eq: 1 }
 });
 
-// ✅ Raw queries still available
+// Raw queries still available
 const result = await client.rawQuery(\`
   query { profiles { id name } }
 \`);`}
