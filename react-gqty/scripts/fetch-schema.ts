@@ -92,7 +92,7 @@ const INTROSPECTION_QUERY = `
 `;
 
 async function fetchSchemaForTenant(tenant: TenantConfig): Promise<any> {
-  console.log(`📡 Fetching schema for tenant: ${tenant.name} (${tenant.id})`);
+  console.log(`Fetching schema for tenant: ${tenant.name} (${tenant.id})`);
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -120,7 +120,7 @@ async function fetchSchemaForTenant(tenant: TenantConfig): Promise<any> {
 
     return (result as any).data;
   } catch (error) {
-    console.error(`❌ Failed to fetch schema for ${tenant.id}:`, error);
+    console.error(`Failed to fetch schema for ${tenant.id}:`, error);
     throw error;
   }
 }
@@ -132,17 +132,15 @@ export async function fetchAllSchemas(): Promise<Map<string, any>> {
     try {
       const schema = await fetchSchemaForTenant(tenant);
       schemas.set(tenant.id, schema);
-      console.log(`✅ Schema fetched for ${tenant.id}`);
+      console.log(`Schema fetched for ${tenant.id}`);
     } catch (error) {
-      console.error(`⚠️  Skipping ${tenant.id} due to error`);
+      console.error(`Skipping ${tenant.id} due to error`);
       // Continue with other tenants
     }
   }
 
   if (schemas.size === 0) {
-    throw new Error(
-      "❌ No schemas could be fetched. Check your configuration."
-    );
+    throw new Error("No schemas could be fetched. Check your configuration.");
   }
 
   return schemas;
@@ -159,6 +157,6 @@ export async function saveSchemas(schemas: Map<string, any>): Promise<void> {
   for (const [tenantId, schema] of schemas.entries()) {
     const filePath = path.join(schemasDir, `${tenantId}.json`);
     fs.writeFileSync(filePath, JSON.stringify(schema, null, 2));
-    console.log(`💾 Saved schema: ${filePath}`);
+    console.log(`Saved schema: ${filePath}`);
   }
 }

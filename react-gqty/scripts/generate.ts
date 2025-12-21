@@ -179,7 +179,7 @@ async function generateAllClients(schemas: Map<string, any>): Promise<void> {
     const clientCode = generateClientForTenant(tenantId, schema);
     const filePath = path.join(clientDir, `${tenantId}-client.ts`);
     fs.writeFileSync(filePath, clientCode);
-    console.log(`✅ Generated client for ${tenantId}`);
+    console.log(`Generated client for ${tenantId}`);
   }
 
   // Generate main client factory
@@ -256,7 +256,7 @@ async function generatePackageJson(): Promise<void> {
 
   const filePath = path.join(GENERATOR_CONFIG.outputDir, "package.json");
   fs.writeFileSync(filePath, JSON.stringify(packageJson, null, 2));
-  console.log("✅ Generated package.json");
+  console.log("Generated package.json");
 }
 
 async function generateIndexFile(tenantIds: string[]): Promise<void> {
@@ -283,7 +283,7 @@ ${tenantIds
 
   const filePath = path.join(GENERATOR_CONFIG.outputDir, "index.ts");
   fs.writeFileSync(filePath, code);
-  console.log("✅ Generated index.ts");
+  console.log("Generated index.ts");
 }
 
 async function generateReadme(): Promise<void> {
@@ -319,45 +319,45 @@ Run \`npm run generate\` to regenerate this client from current Hasura schemas.
 
   const filePath = path.join(GENERATOR_CONFIG.outputDir, "README.md");
   fs.writeFileSync(filePath, readme);
-  console.log("✅ Generated README.md");
+  console.log("Generated README.md");
 }
 
 export async function generate(): Promise<void> {
-  console.log("🚀 Starting code generation...\n");
+  console.log("Starting code generation...\n");
 
   try {
     // Step 1: Fetch schemas
-    console.log("📡 Step 1: Fetching schemas from Hasura...");
+    console.log("Step 1: Fetching schemas from Hasura...");
     const schemas = await fetchAllSchemas();
     await saveSchemas(schemas);
     console.log("");
 
     // Step 2: Generate types
-    console.log("🔧 Step 2: Generating TypeScript types...");
+    console.log("Step 2: Generating TypeScript types...");
     await generateAllTypes(schemas);
     console.log("");
 
     // Step 3: Generate client code
-    console.log("🔧 Step 3: Generating client code...");
+    console.log("Step 3: Generating client code...");
     await generateAllClients(schemas);
     console.log("");
 
     // Step 4: Generate package files
-    console.log("📦 Step 4: Generating package files...");
+    console.log("Step 4: Generating package files...");
     await generatePackageJson();
     await generateIndexFile(Array.from(schemas.keys()));
     await generateReadme();
     console.log("");
 
-    console.log("✅ Code generation complete!");
-    console.log(`📁 Generated files in: ${GENERATOR_CONFIG.outputDir}`);
+    console.log("Code generation complete!");
+    console.log(`Generated files in: ${GENERATOR_CONFIG.outputDir}`);
     console.log("");
     console.log("Next steps:");
     console.log("  1. Import from ./generated in your React app");
     console.log("  2. Use createClient() to get a typed client");
     console.log("  3. Enjoy type-safe GraphQL queries!");
   } catch (error) {
-    console.error("❌ Code generation failed:", error);
+    console.error("Code generation failed:", error);
     process.exit(1);
   }
 }

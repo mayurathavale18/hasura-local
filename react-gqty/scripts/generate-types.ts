@@ -142,13 +142,13 @@ export async function generateAllTypes(
   // Generate common types
   const commonTypes = generateCommonTypes();
   fs.writeFileSync(path.join(typesDir, "common.ts"), commonTypes);
-  console.log("✅ Generated common types");
+  console.log("Generated common types");
 
   // Generate types for each tenant
   for (const [tenantId, schema] of schemas.entries()) {
     const types = generateTypesForSchema(tenantId, schema);
     const filePath = path.join(typesDir, `${tenantId}.ts`);
     fs.writeFileSync(filePath, types);
-    console.log(`✅ Generated types for ${tenantId}`);
+    console.log(`Generated types for ${tenantId}`);
   }
 }
