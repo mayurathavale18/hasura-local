@@ -100,7 +100,7 @@ async function fetchSchemaForTenant(tenant: TenantConfig): Promise<any> {
   };
 
   try {
-    const response = await fetch(tenant.hasuraEndpoint, {
+    const response = await fetch(GENERATOR_CONFIG.proxyEndpoint, {
       method: "POST",
       headers,
       body: JSON.stringify({ query: INTROSPECTION_QUERY }),

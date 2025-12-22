@@ -1,7 +1,6 @@
 export interface TenantConfig {
   id: string;
   name: string;
-  hasuraEndpoint: string;
   headers?: Record<string, string>;
 }
 
@@ -13,21 +12,18 @@ export const GENERATOR_CONFIG = {
 
   tenants: [
     {
-      id: "default",
-      name: "Default Tenant",
-      hasuraEndpoint: "http://localhost:8080/v1/graphql",
+      id: "public",
+      name: "Public",
     },
     // {
-    //   id: "tenant-1",
-    //   name: "Tenant 1",
-    //   hasuraEndpoint: "http://localhost:8080/v1/graphql",
-    //   headers: { "x-tenant-id": "tenant-1" },
+    //   id: "enterprise_1",
+    //   name: "Enterprise 1",
+    //   headers: { "x-tenant-id": "enterprise_1" },
     // },
     // {
-    //   id: "tenant-2",
-    //   name: "Tenant 2",
-    //   hasuraEndpoint: "http://localhost:8080/v1/graphql",
-    //   headers: { "x-tenant-id": "tenant-2" },
+    //   id: "enterprise_2",
+    //   name: "Enterprise 2",
+    //   headers: { "x-tenant-id": "enterprise_2" },
     // },
   ] as TenantConfig[],
 };

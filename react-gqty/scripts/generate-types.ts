@@ -28,15 +28,29 @@ function getTypeScriptType(graphqlType: any): string {
   switch (type.name) {
     case "Int":
     case "Float":
-      return "number";
+    case "numeric":
     case "String":
+    case "uuid":
+    case "timestamp":
+    case "timestamptz":
+    case "date":
+    case "time":
+    case "timetz":
+    case "citext":
       return "string";
+    case "bigint":
+      return "bigint";
     case "Boolean":
       return "boolean";
     case "ID":
       return "string | number";
+    case "json":
+    case "jsonb":
+      return "any";
     default:
-      return type.name || "any";
+      // If it's not a recognized type, assume it's a string
+      // This handles custom scalars from Hasura
+      return "any";
   }
 }
 
@@ -51,6 +65,7 @@ function generateInterfaceForType(typeDef: TypeDef): string {
   }
 
   const fields = typeDef.fields
+    .filter((field) => field?.type.name !== "bigint")
     .map((field) => {
       const tsType = getTypeScriptType(field.type);
       const isNullable = field.type.kind !== "NON_NULL";
@@ -101,6 +116,18 @@ ${interfaces.join("\n")}
 export function generateCommonTypes(): string {
   return `// Common types used across all tenants
 // DO NOT EDIT MANUALLY
+
+// Hasura/PostgreSQL scalar types mapped to TypeScript
+export type uuid = string;
+export type timestamptz = string;
+export type timestamp = string;
+export type date = string;
+export type time = string;
+export type timetz = string;
+export type numeric = number;
+export type jsonb = any;
+export type json = any;
+export type citext = string;
 
 export interface QueryOptions {
   limit?: number;

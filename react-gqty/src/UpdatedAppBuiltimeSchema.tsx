@@ -4,7 +4,7 @@ import type { TenantId } from "../generated/client";
 // import type { DefaultClient } from "../generated/client/default-client";
 
 export default function App() {
-  const [tenantId, setTenantId] = useState<TenantId>("default");
+  const [tenantId] = useState<TenantId>("public");
   const [client, setClient] = useState<any>(null);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -15,7 +15,7 @@ export default function App() {
   useEffect(() => {
     try {
       const newClient = createClient({
-        endpoint: "http://localhost:3000/graphql",
+        endpoint: process.env.PROXY_ENDPOINT ?? "http://localhost:3000/graphql",
         tenantId,
       });
       setClient(newClient);
@@ -131,46 +131,6 @@ export default function App() {
             <strong>Build fails if schema breaks</strong> → Production safety
           </li>
         </ul>
-      </div>
-
-      {/* Tenant Selector */}
-      <div
-        style={{
-          background: "#e3f2fd",
-          padding: "15px",
-          borderRadius: "5px",
-          marginBottom: "20px",
-        }}
-      >
-        <h3>Select Tenant</h3>
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          {(["default"] as TenantId[]).map((id) => (
-            <button
-              key={id}
-              onClick={() => setTenantId(id)}
-              style={{
-                padding: "10px 20px",
-                background: tenantId === id ? "#1976d2" : "#e0e0e0",
-                color: tenantId === id ? "white" : "#333",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontWeight: tenantId === id ? "bold" : "normal",
-                fontSize: "14px",
-                transition: "all 0.2s",
-              }}
-            >
-              {id === "default"
-                ? "Default"
-                : ((id ?? "") as string)
-                    .replace(/-/g, " ")
-                    .replace(/\b\w/g, (l) => l.toUpperCase())}
-            </button>
-          ))}
-        </div>
-        <p style={{ marginTop: "10px", fontSize: "14px", color: "#666" }}>
-          <strong>Active Tenant:</strong> {tenantId}
-        </p>
       </div>
 
       {/* Error Display */}

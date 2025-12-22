@@ -214,7 +214,7 @@ ${clientMap}
 export type TenantId = keyof typeof CLIENT_MAP;
 
 export function createClient(config: ClientConfig) {
-  const tenantId = (config.tenantId || 'default') as TenantId;
+  const tenantId = (config.tenantId || 'public') as TenantId;
 
   if (!CLIENT_MAP[tenantId]) {
     throw new Error(\`Unknown tenant: \${tenantId}. Available: \${Object.keys(CLIENT_MAP).join(', ')}\`);
@@ -234,7 +234,7 @@ export { ${tenantIds.map((id) => `${capitalize(id)}Client`).join(", ")} };
 
   const filePath = path.join(GENERATOR_CONFIG.outputDir, "client", "index.ts");
   fs.writeFileSync(filePath, code);
-  console.log("✅ Generated main client factory");
+  console.log("Generated main client factory");
 }
 
 async function generatePackageJson(): Promise<void> {
@@ -325,10 +325,16 @@ Run \`npm run generate\` to regenerate this client from current Hasura schemas.
 export async function generate(): Promise<void> {
   console.log("Starting code generation...\n");
 
+  if (fs.existsSync(path.resolve(GENERATOR_CONFIG.outputDir))) {
+    console.log("Removing existing output directory...");
+    fs.rmSync(path.resolve(GENERATOR_CONFIG.outputDir), { recursive: true });
+  }
+
   try {
     // Step 1: Fetch schemas
     console.log("Step 1: Fetching schemas from Hasura...");
     const schemas = await fetchAllSchemas();
+    console.log("schemas : ", schemas);
     await saveSchemas(schemas);
     console.log("");
 
