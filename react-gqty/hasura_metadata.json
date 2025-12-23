@@ -1,0 +1,231 @@
+{
+  "resource_version": 71,
+  "metadata": {
+    "version": 3,
+    "sources": [
+      {
+        "name": "Postgres-QA",
+        "kind": "postgres",
+        "tables": [
+          {
+            "table": {
+              "name": "customer_contribution",
+              "schema": "public"
+            }
+          },
+          {
+            "table": {
+              "name": "turnover_scheme",
+              "schema": "public"
+            },
+            "array_relationships": [
+              {
+                "name": "turnover_scheme_slabs",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "scheme_id",
+                    "table": {
+                      "name": "turnover_scheme_slabs",
+                      "schema": "public"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "turnoverinvoice_lines",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "scheme_id",
+                    "table": {
+                      "name": "turnoverinvoice_line",
+                      "schema": "public"
+                    }
+                  }
+                }
+              }
+            ],
+            "insert_permissions": [
+              {
+                "role": "server",
+                "permission": {
+                  "check": {},
+                  "columns": [
+                    "code",
+                    "created_at",
+                    "description",
+                    "end_date",
+                    "group_operator",
+                    "id",
+                    "name",
+                    "start_date",
+                    "updated_at",
+                    "workspace_id"
+                  ]
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "turnover_scheme_slabs",
+              "schema": "public"
+            }
+          },
+          {
+            "table": {
+              "name": "turnoverinvoice",
+              "schema": "public"
+            },
+            "object_relationships": [
+              {
+                "name": "turnoverinvoice_detail",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "invoice_number",
+                    "table": {
+                      "name": "turnoverinvoice_details",
+                      "schema": "public"
+                    }
+                  }
+                }
+              }
+            ],
+            "array_relationships": [
+              {
+                "name": "turnoverinvoice_lines",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "invoice_number",
+                    "table": {
+                      "name": "turnoverinvoice_line",
+                      "schema": "public"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "turnoverinvoice_details",
+              "schema": "public"
+            },
+            "object_relationships": [
+              {
+                "name": "turnoverinvoice",
+                "using": {
+                  "foreign_key_constraint_on": "invoice_number"
+                }
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "turnoverinvoice_line",
+              "schema": "public"
+            },
+            "object_relationships": [
+              {
+                "name": "turnoverinvoice",
+                "using": {
+                  "foreign_key_constraint_on": "invoice_number"
+                }
+              }
+            ]
+          }
+        ],
+        "configuration": {
+          "connection_info": {
+            "database_url": "postgres://postgres:b2fAj[k)k6f*VIFMfompTS2|jL-3@zono-digital-qa-postgres-database-1.cu5n2yzte6gk.ap-south-1.rds.amazonaws.com:5432/postgres",
+            "isolation_level": "read-committed",
+            "use_prepared_statements": false
+          }
+        }
+      },
+      {
+        "name": "birla_nu",
+        "kind": "postgres",
+        "tables": [],
+        "configuration": {
+          "connection_info": {
+            "database_url": "postgres://postgres:b2fAj[k)k6f*VIFMfompTS2|jL-3@zono-digital-qa-postgres-database-1.cu5n2yzte6gk.ap-south-1.rds.amazonaws.com:5432/birla_nu",
+            "isolation_level": "read-committed",
+            "use_prepared_statements": false
+          }
+        }
+      }
+    ],
+    "query_collections": [
+      {
+        "name": "allowed-queries",
+        "definition": {
+          "queries": [
+            {
+              "name": "insert_turnover_scheme_one",
+              "query": "mutation insert_turnover_scheme_one($object: turnover_scheme_insert_input!) {\n  insert_turnover_scheme_one(object: $object) {\n    code\n    created_at\n    description\n    end_date\n    group_operator\n    id\n    name\n    start_date\n    updated_at\n    workspace_id\n  }\n}\n"
+            },
+            {
+              "name": "InsertInvoiceWithDetailsAndLines",
+              "query": "mutation InsertInvoiceWithDetailsAndLines {\n  insert_turnoverinvoice_one(\n    object: {\n      invoice_number: \"INV123456\",\n      submittedby: \"John Doe\",\n      status: \"Pending\",\n      cfa: \"CFA123\",\n      buyername: \"Buyer Company\",\n      sellername: \"Seller Company\",\n      invoice_amount: 5000.00,\n      approved_rejected_by: null,\n      workspaceId: \"workspace_1\",\n      turnoverinvoice_detail: {\n        data:{buyerdetails: {\n          name: \"Buyer Company\",\n          address: \"Buyer Address\",\n          email: \"buyer@example.com\"\n        },\n        distributordetails: {\n          name: \"Distributor Company\",\n          address: \"Distributor Address\",\n          email: \"distributor@example.com\"\n        }}\n      },\n      turnoverinvoice_lines: {\n        data: [\n          {\n            skucode: \"SKU001\",\n            product_name: \"Product A\",\n            hsh: \"HSH001\",\n            price: 1000.00,\n            quantity: 2,\n            discount: 100.00,\n            totalamount: 1900.00,\n            parsingstatus: \"Pending\",\n            reason: \"Initial order\"\n          },\n          {\n            skucode: \"SKU002\",\n            product_name: \"Product B\",\n            hsh: \"HSH002\",\n            price: 2000.00,\n            quantity: 1,\n            discount: 0.00,\n            totalamount: 2000.00,\n            parsingstatus: \"Pending\",\n            reason: \"Regular order\"\n          }\n        ]\n      }\n    }\n  ) {\n    id\n    invoice_number\n    invoice_amount\n    status\n  }\n}"
+            },
+            {
+              "name": "Introspection query",
+              "query": "query IntrospectionQuery {\n        __schema {\n          queryType { name }\n          mutationType { name }\n          subscriptionType { name }\n          types {\n            ...FullType\n          }\n          directives {\n            name\n            description\n            locations\n            args {\n              ...InputValue\n            }\n          }\n        }\n      }\n\n      fragment FullType on __Type {\n        kind\n        name\n        description\n        fields(includeDeprecated: true) {\n          name\n          description\n          args {\n            ...InputValue\n          }\n          type {\n            ...TypeRef\n          }\n          isDeprecated\n          deprecationReason\n        }\n        inputFields {\n          ...InputValue\n        }\n        interfaces {\n          ...TypeRef\n        }\n        enumValues(includeDeprecated: true) {\n          name\n          description\n          isDeprecated\n          deprecationReason\n        }\n        possibleTypes {\n          ...TypeRef\n        }\n      }\n\n      fragment InputValue on __InputValue {\n        name\n        description\n        type { ...TypeRef }\n        defaultValue\n      }\n\n      fragment TypeRef on __Type {\n        kind\n        name\n        ofType {\n          kind\n          name\n          ofType {\n            kind\n            name\n            ofType {\n              kind\n              name\n              ofType {\n                kind\n                name\n                ofType {\n                  kind\n                  name\n                  ofType {\n                    kind\n                    name\n                    ofType {\n                      kind\n                      name\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }"
+            },
+            {
+              "name": "insert_customer_contribution_one",
+              "query": "mutation insert_customer_contribution_one($object: customer_contribution_insert_input!) {\n  insert_customer_contribution_one(object: $object) {\n    contribution\n    created_at\n    customer_id\n    id\n    scheme_id\n  }\n}\n"
+            }
+          ]
+        }
+      }
+    ],
+    "allowlist": [
+      {
+        "collection": "allowed-queries",
+        "scope": {
+          "global": true
+        }
+      }
+    ],
+    "rest_endpoints": [
+      {
+        "comment": "",
+        "definition": {
+          "query": {
+            "collection_name": "allowed-queries",
+            "query_name": "insert_customer_contribution_one"
+          }
+        },
+        "methods": ["POST"],
+        "name": "insert_customer_contribution_one",
+        "url": "customer_contribution"
+      },
+      {
+        "comment": "",
+        "definition": {
+          "query": {
+            "collection_name": "allowed-queries",
+            "query_name": "InsertInvoiceWithDetailsAndLines"
+          }
+        },
+        "methods": ["POST"],
+        "name": "InsertInvoiceWithDetailsAndLines",
+        "url": "insertinvoicewithdetailsandlines"
+      },
+      {
+        "comment": "",
+        "definition": {
+          "query": {
+            "collection_name": "allowed-queries",
+            "query_name": "insert_turnover_scheme_one"
+          }
+        },
+        "methods": ["POST"],
+        "name": "insert_turnover_scheme_one",
+        "url": "turnover_scheme"
+      }
+    ]
+  }
+}

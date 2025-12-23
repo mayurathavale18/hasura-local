@@ -1,164 +1,140 @@
 import fs from "fs";
 import path from "path";
 import { GENERATOR_CONFIG } from "./config";
+import type {
+  SchemaMetadata,
+  TableMetadata,
+  InputObject,
+} from "./analyze-schema";
 
-interface Field {
-  name: string;
-  type: {
-    kind: string;
-    name: string | null;
-    ofType?: {
-      kind: string;
-      name: string | null;
-    };
-  };
+export type FilterOp = "eq" | "neq" | "gt" | "lt" | "ilike";
+
+export interface Filter {
+  field: string;
+  op: FilterOp;
+  value: string | number | boolean;
 }
-
-interface TypeDef {
-  kind: string;
-  name: string;
-  fields?: Field[];
-}
-
-function getTypeScriptType(graphqlType: any): string {
-  if (!graphqlType) return "any";
-
-  const type = graphqlType.ofType || graphqlType;
-
-  switch (type.name) {
-    case "Int":
-    case "Float":
-    case "numeric":
-    case "String":
-    case "uuid":
-    case "timestamp":
-    case "timestamptz":
-    case "date":
-    case "time":
-    case "timetz":
-    case "citext":
-      return "string";
-    case "bigint":
-      return "bigint";
-    case "Boolean":
-      return "boolean";
-    case "ID":
-      return "string | number";
-    case "json":
-    case "jsonb":
-      return "any";
-    default:
-      // If it's not a recognized type, assume it's a string
-      // This handles custom scalars from Hasura
-      return "any";
-  }
-}
-
-function generateInterfaceForType(typeDef: TypeDef): string {
-  if (!typeDef.fields || typeDef.fields.length === 0) {
-    return "";
-  }
-
-  // Skip internal types
-  if (typeDef.name.startsWith("__")) {
-    return "";
-  }
-
-  const fields = typeDef.fields
-    .filter((field) => field?.type.name !== "bigint")
-    .map((field) => {
-      const tsType = getTypeScriptType(field.type);
-      const isNullable = field.type.kind !== "NON_NULL";
-      return `  ${field.name}${isNullable ? "?" : ""}: ${tsType};`;
-    })
-    .join("\n");
-
-  return `
-export interface ${typeDef.name} {
-${fields}
-}
-`;
-}
-
-export function generateTypesForSchema(tenantId: string, schema: any): string {
-  const types = schema.__schema.types as TypeDef[];
-
-  // Filter to only object types that are likely user tables
-  const userTypes = types.filter(
-    (t) =>
-      t.kind === "OBJECT" &&
-      !t.name.startsWith("__") &&
-      !t.name.endsWith("_mutation_response") &&
-      !t.name.endsWith("_aggregate") &&
-      !t.name.endsWith("_aggregate_fields") &&
-      !t.name.endsWith("_max_fields") &&
-      !t.name.endsWith("_min_fields") &&
-      !t.name.endsWith("_stddev_fields") &&
-      !t.name.endsWith("_sum_fields") &&
-      !t.name.endsWith("_var_pop_fields") &&
-      !t.name.endsWith("_var_samp_fields") &&
-      !t.name.endsWith("_variance_fields") &&
-      t.name !== "query_root" &&
-      t.name !== "mutation_root" &&
-      t.name !== "subscription_root"
-  );
-
-  const interfaces = userTypes.map(generateInterfaceForType).filter(Boolean);
-
-  return `// Generated types for tenant: ${tenantId}
-// Generated at: ${new Date().toISOString()}
-// DO NOT EDIT MANUALLY
-
-${interfaces.join("\n")}
-`;
-}
-
-export function generateCommonTypes(): string {
-  return `// Common types used across all tenants
-// DO NOT EDIT MANUALLY
-
-// Hasura/PostgreSQL scalar types mapped to TypeScript
-export type uuid = string;
-export type timestamptz = string;
-export type timestamp = string;
-export type date = string;
-export type time = string;
-export type timetz = string;
-export type numeric = number;
-export type jsonb = any;
-export type json = any;
-export type citext = string;
 
 export interface QueryOptions {
   limit?: number;
   offset?: number;
-  orderBy?: string;
-  where?: any;
+  filters?: Filter[];
+  orderBy?: {
+    field: string;
+    direction: "asc" | "desc";
+  };
+  distinctOn?: string[];
 }
 
-export interface MutationResponse<T> {
-  affected_rows: number;
-  returning: T[];
+/**
+ * Capitalize first letter
+ */
+function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-export interface InsertMutationResponse<T> {
-  insert_returning: T[];
+/**
+ * Map GraphQL scalar → TypeScript
+ * (Non-scalars default to any for now)
+ */
+function mapGraphQLTypeToTS(type: string): string {
+  const base = type.replace("[]", "");
+
+  const map: Record<string, string> = {
+    Int: "number",
+    Float: "number",
+    String: "string",
+    Boolean: "boolean",
+    ID: "string",
+    uuid: "string",
+    timestamptz: "string",
+    timestamp: "string",
+    date: "string",
+    time: "string",
+    timetz: "string",
+    numeric: "number",
+    json: "any",
+    jsonb: "any",
+  };
+
+  const ts = map[base] ?? "any";
+  return type.endsWith("[]") ? `${ts}[]` : ts;
 }
 
-export interface GraphQLError {
-  message: string;
-  extensions?: Record<string, any>;
-}
+/**
+ * Generate SELECT table interface
+ */
+function generateTableInterface(table: TableMetadata): string {
+  const lines = table.fields.map((f) => {
+    const optional = f.nullable ? "?" : "";
+    return `  ${f.name}${optional}: ${mapGraphQLTypeToTS(f.type)};`;
+  });
 
-export interface GraphQLResponse<T> {
-  data?: T;
-  errors?: GraphQLError[];
+  return `
+export interface ${capitalize(table.name)} {
+${lines.join("\n")}
 }
 `;
 }
 
+/**
+ * Generate INSERT / UPDATE input interfaces
+ */
+function generateInputInterface(
+  interfaceName: string,
+  input: InputObject
+): string {
+  const lines = input.fields.map((f) => {
+    const optional = f.nullable || f.hasDefault ? "?" : "";
+    return `  ${f.name}${optional}: ${mapGraphQLTypeToTS(f.type)};`;
+  });
+
+  return `
+export interface ${interfaceName} {
+${lines.join("\n")}
+}
+`;
+}
+
+/**
+ * Generate all table-related types
+ */
+function generateTableTypes(metadata: SchemaMetadata): string {
+  const parts: string[] = [];
+
+  for (const table of metadata.tables.values()) {
+    // SELECT type
+    parts.push(generateTableInterface(table));
+
+    // INSERT input
+    if (table.insertInput) {
+      parts.push(
+        generateInputInterface(
+          `${capitalize(table.name)}InsertInput`,
+          table.insertInput
+        )
+      );
+    }
+
+    // UPDATE input
+    if (table.updateInput) {
+      parts.push(
+        generateInputInterface(
+          `${capitalize(table.name)}UpdateInput`,
+          table.updateInput
+        )
+      );
+    }
+  }
+
+  return parts.join("\n");
+}
+
+/**
+ * Generate all types into /generated/types
+ */
 export async function generateAllTypes(
-  schemas: Map<string, any>
+  metadata: SchemaMetadata
 ): Promise<void> {
   const typesDir = path.join(GENERATOR_CONFIG.outputDir, "types");
 
@@ -166,16 +142,33 @@ export async function generateAllTypes(
     fs.mkdirSync(typesDir, { recursive: true });
   }
 
-  // Generate common types
-  const commonTypes = generateCommonTypes();
-  fs.writeFileSync(path.join(typesDir, "common.ts"), commonTypes);
-  console.log("Generated common types");
+  const content = `// AUTO-GENERATED FILE
+// DO NOT EDIT MANUALLY
+// Generated at: ${new Date().toISOString()}
 
-  // Generate types for each tenant
-  for (const [tenantId, schema] of schemas.entries()) {
-    const types = generateTypesForSchema(tenantId, schema);
-    const filePath = path.join(typesDir, `${tenantId}.ts`);
-    fs.writeFileSync(filePath, types);
-    console.log(`Generated types for ${tenantId}`);
-  }
+export type FilterOp = "eq" | "neq" | "gt" | "lt" | "ilike";
+
+export interface Filter {
+  field: string;
+  op: FilterOp;
+  value: string | number | boolean;
+}
+
+export interface QueryOptions {
+  limit?: number;
+  offset?: number;
+  filters?: Filter[];
+  orderBy?: {
+    field: string;
+    direction: "asc" | "desc";
+  };
+  distinctOn?: string[];
+}
+
+${generateTableTypes(metadata)}
+`;
+
+  fs.writeFileSync(path.join(typesDir, "tables.ts"), content);
+
+  console.log("Generated types/tables.ts");
 }

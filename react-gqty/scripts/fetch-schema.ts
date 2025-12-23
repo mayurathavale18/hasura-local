@@ -1,162 +1,134 @@
-import fs from "fs";
-import path from "path";
-import { GENERATOR_CONFIG, TenantConfig } from "./config";
+import { GENERATOR_CONFIG } from "./config";
 
+/**
+ * FULL Hasura-safe introspection query
+ * - Includes inputFields + defaultValue (critical for required fields)
+ * - Includes mutation args (for PK detection)
+ */
 const INTROSPECTION_QUERY = `
-  query IntrospectionQuery {
-    __schema {
-      queryType {
-        name
+query IntrospectionQuery {
+  __schema {
+  queryType {
         fields {
           name
-          description
           args {
-            name
-            description
-            type {
-              kind
-              name
-              ofType {
-                kind
                 name
+                type {
+                  ...TypeRef
+                }
               }
-            }
-          }
-          type {
-            kind
-            name
-            ofType {
-              kind
-              name
-            }
-          }
         }
       }
-      mutationType {
+    mutationType {
+      fields {
         name
-        fields {
-          name
-          description
-          args {
-            name
-            description
-            type {
-              kind
-              name
-              ofType {
-                kind
-                name
-              }
-            }
-          }
-          type {
-            kind
-            name
-          }
-        }
-      }
-      types {
-        kind
-        name
-        description
-        fields {
-          name
-          description
-          type {
-            kind
-            name
-            ofType {
-              kind
-              name
-              ofType {
-                kind
-                name
-              }
-            }
-          }
-        }
-        inputFields {
+        args {
           name
           type {
-            kind
-            name
-            ofType {
-              kind
-              name
-            }
+            ...TypeRef
           }
         }
       }
     }
+    types {
+      kind
+      name
+      fields {
+        name
+        type {
+          ...TypeRef
+        }
+      }
+      inputFields {
+        name
+        defaultValue
+        type {
+          ...TypeRef
+        }
+      }
+    }
   }
+}
+
+fragment TypeRef on __Type {
+  kind
+  name
+  ofType {
+    kind
+    name
+    ofType {
+      kind
+      name
+      ofType {
+        kind
+        name
+      }
+    }
+  }
+}
 `;
 
-async function fetchSchemaForTenant(tenant: TenantConfig): Promise<any> {
-  console.log(`Fetching schema for tenant: ${tenant.name} (${tenant.id})`);
+/**
+ * Fetch unified schema from Hasura (or proxy)
+ */
+export async function fetchSchema(): Promise<any> {
+  const endpoint = GENERATOR_CONFIG.useProxy
+    ? GENERATOR_CONFIG.proxyEndpoint
+    : GENERATOR_CONFIG.hasuraEndpoint;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...tenant.headers,
+    "x-hasura-admin-secret":
+      process.env.HASURA_ADMIN_SECRET ?? "sWetrohoswlwro3tostaqawlthuql0ha",
   };
 
-  try {
-    const response = await fetch(GENERATOR_CONFIG.proxyEndpoint, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ query: INTROSPECTION_QUERY }),
-    });
+  console.log(`Fetching schema from ${endpoint}`);
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      query: INTROSPECTION_QUERY,
+    }),
+  });
 
-    const result = await response.json();
-
-    if ((result as any).errors) {
-      throw new Error(
-        `GraphQL errors: ${JSON.stringify((result as any).errors)}`
-      );
-    }
-
-    return (result as any).data;
-  } catch (error) {
-    console.error(`Failed to fetch schema for ${tenant.id}:`, error);
-    throw error;
+  if (!response.ok) {
+    throw new Error(
+      `Schema fetch failed: ${response.status} ${response.statusText}`
+    );
   }
+
+  const result = (await response.json()) as any;
+
+  if (result.errors) {
+    throw new Error(
+      `GraphQL introspection errors: ${JSON.stringify(result.errors, null, 2)}`
+    );
+  }
+
+  if (!result.data?.__schema) {
+    throw new Error("Invalid introspection response: missing __schema");
+  }
+
+  console.log("Schema fetched successfully");
+  return result.data;
 }
 
-export async function fetchAllSchemas(): Promise<Map<string, any>> {
-  const schemas = new Map<string, any>();
-
-  for (const tenant of GENERATOR_CONFIG.tenants) {
-    try {
-      const schema = await fetchSchemaForTenant(tenant);
-      schemas.set(tenant.id, schema);
-      console.log(`Schema fetched for ${tenant.id}`);
-    } catch (error) {
-      console.error(`Skipping ${tenant.id} due to error`);
-      // Continue with other tenants
-    }
+/**
+ * Validate minimal schema structure
+ */
+export function validateSchema(schema: any): void {
+  if (!schema.__schema) {
+    throw new Error("Invalid schema: __schema missing");
   }
 
-  if (schemas.size === 0) {
-    throw new Error("No schemas could be fetched. Check your configuration.");
+  if (!schema.__schema.queryType) {
+    throw new Error("Invalid schema: queryType missing");
   }
 
-  return schemas;
-}
-
-export async function saveSchemas(schemas: Map<string, any>): Promise<void> {
-  const schemasDir = path.join(GENERATOR_CONFIG.outputDir, "schemas");
-
-  // Create directory if it doesn't exist
-  if (!fs.existsSync(schemasDir)) {
-    fs.mkdirSync(schemasDir, { recursive: true });
+  if (!Array.isArray(schema.__schema.types)) {
+    throw new Error("Invalid schema: types array missing");
   }
 
-  for (const [tenantId, schema] of schemas.entries()) {
-    const filePath = path.join(schemasDir, `${tenantId}.json`);
-    fs.writeFileSync(filePath, JSON.stringify(schema, null, 2));
-    console.log(`Saved schema: ${filePath}`);
-  }
+  console.log("Schema validation passed");
 }

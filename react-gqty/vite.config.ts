@@ -14,9 +14,12 @@ export default defineConfig(({ mode }) => {
         env.PROXY_ENDPOINT || "http://localhost:3000/graphql"
       ),
       "process.env.HASURA_ENDPOINT": JSON.stringify(
-        env.HASURA_ENDPOINT || "http://localhost:8080/v1/graphql"
+        env.HASURA_ENDPOINT || "https://hasura-qa.zotok.ai:8443/v1/graphql"
       ),
       "process.env.NODE_ENV": JSON.stringify(mode),
+      "process.env.HASURA_ADMIN_SECRET": JSON.stringify(
+        env.HASURA_ADMIN_SECRET || "sWetrohoswlwro3tostaqawlthuql0ha"
+      ),
     },
   };
 });
